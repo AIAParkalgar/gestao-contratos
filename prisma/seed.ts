@@ -34,10 +34,14 @@ async function main() {
     const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD ?? "";
     if (!adminEmail || adminPassword.length < 8) {
-      throw new Error("Defina ADMIN_EMAIL e ADMIN_PASSWORD (mín. 8 caracteres) para criar o administrador inicial.");
+      console.warn(
+        "⚠️  AVISO: ainda não existe nenhum administrador. Defina ADMIN_EMAIL e ADMIN_PASSWORD " +
+          "(mín. 8 caracteres) e volte a publicar para o criar.",
+      );
+    } else {
+      await upsertUser("Administrador", adminEmail, adminPassword, "ADMIN", []);
+      console.log(`Administrador criado: ${adminEmail} → altere a password após o primeiro login.`);
     }
-    await upsertUser("Administrador", adminEmail, adminPassword, "ADMIN", []);
-    console.log(`Administrador criado: ${adminEmail} → altere a password após o primeiro login.`);
   } else {
     console.log("Já existe um administrador — nada a criar.");
   }
