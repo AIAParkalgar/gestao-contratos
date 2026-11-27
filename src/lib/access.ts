@@ -7,6 +7,7 @@ import type { CurrentUser } from "./auth";
  * - Público: todos.
  * - Restrito: quem pertence à equipa do contrato (e quem o criou).
  * - Confidencial: apenas quem criou (e admins).
+ * - O responsável interno vê sempre os contratos de que é responsável.
  */
 export function contractAccessWhere(user: CurrentUser): Prisma.ContractWhereInput {
   if (user.role === "ADMIN") return {};
@@ -14,6 +15,7 @@ export function contractAccessWhere(user: CurrentUser): Prisma.ContractWhereInpu
     OR: [
       { visibility: "PUBLICO" },
       { creatorId: user.id },
+      { responsibleId: user.id },
       { visibility: "RESTRITO", teamId: { in: user.teamIds } },
     ],
   };

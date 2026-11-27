@@ -37,22 +37,38 @@ export type DateFormValue = {
   note: string;
 };
 
+export type DocumentFormValue = { key: string; name: string; url: string };
+
 export type ContractFormValues = {
   type: string;
   entity: string;
+  entityNif: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
   startDate: string;
   endDate: string;
+  autoRenew: boolean;
+  renewalMonths: string;
+  noticeDays: string;
   scope: string;
   obligations: string;
-  documentUrl: string;
   visibility: Visibility;
   teamId: string;
+  responsibleId: string;
+  documents: DocumentFormValue[];
   payments: PaymentFormValue[];
   dates: DateFormValue[];
 };
 
 let keySeq = 0;
-const newKey = () => `k${Date.now()}-${keySeq++}`;
+export const newKey = () => `k${Date.now()}-${keySeq++}`;
+
+/** dd/mm/aaaa da data `iso` menos `days` dias (pré-visualização da data limite de denúncia). */
+function minusDays(iso: string, days: number): string {
+  const d = new Date(Date.parse(`${iso}T00:00:00Z`) - days * 86_400_000);
+  return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+}
 
 function emptyPayment(): PaymentFormValue {
   return { key: newKey(), direction: "ENTIDADE_PARA_PARKALGAR", date: "", mode: "VALOR", amount: "", percentage: "", percentageBase: "" };
@@ -66,12 +82,16 @@ export default function ContractForm({
   contractId,
   initial,
   teams,
+  users,
   cancelHref,
+  duplicatedFrom,
 }: {
   contractId: string | null;
   initial: ContractFormValues;
   teams: { id: string; name: string }[];
+  users: { id: string; name: string }[];
   cancelHref: string;
+  duplicatedFrom?: string | null;
 }) {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<string[]>([]);
@@ -90,6 +110,18 @@ export default function ContractForm({
       payments: prev.payments.map((p) => (p.key === key ? { ...p, ...patch } : p)),
     }));
 
+  const setDocument = (key: string, patch: Partial<DocumentFormValue>) =>
+    setValues((prev) => ({
+      ...prev,
+      documents: prev.documents.map((d) => (d.key === key ? { ...d, ...patch } : d)),
+    }));
+
+  const noticeDaysNum = Number(values.noticeDays);
+  const noticePreview =
+    values.endDate && values.noticeDays !== "" && Number.isInteger(noticeDaysNum) && noticeDaysNum > 0
+      ? minusDays(values.endDate, noticeDaysNum)
+      : null;
+
   const setDate = (key: string, patch: Partial<DateFormValue>) =>
     setValues((prev) => ({
       ...prev,
@@ -102,13 +134,21 @@ export default function ContractForm({
     const payload = {
       type: values.type,
       entity: values.entity,
+      entityNif: values.entityNif,
+      contactName: values.contactName,
+      contactEmail: values.contactEmail,
+      contactPhone: values.contactPhone,
       startDate: values.startDate,
       endDate: values.endDate,
+      autoRenew: values.autoRenew,
+      renewalMonths: values.autoRenew ? values.renewalMonths : "",
+      noticeDays: values.noticeDays,
       scope: values.scope,
       obligations: values.obligations,
-      documentUrl: values.documentUrl,
       visibility: values.visibility,
       teamId: values.teamId,
+      responsibleId: values.responsibleId,
+      documents: values.documents.map((d) => ({ name: d.name, url: d.url })),
       payments: values.payments.map((p) =>
         p.mode === "VALOR"
           ? { direction: p.direction, date: p.date, mode: p.mode, amount: p.amount }
@@ -117,7 +157,7 @@ export default function ContractForm({
       dates: values.dates.map((d) => ({ kind: d.kind, label: d.label, date: d.date, note: d.note })),
     };
     startTransition(async () => {
-      const res = await saveContract(contractId, payload);
+      const res = await saveContract(contractId, payload, duplicatedFrom ?? null);
       if (res?.errors) {
         setErrors(res.errors);
         topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -147,6 +187,28 @@ export default function ContractForm({
             <input id="entity" className="input" required value={values.entity}
               onChange={(e) => set("entity", e.target.value)} placeholder="Nome da entidade" />
           </div>
+          <div className="grid gap-4 sm:col-span-2 sm:grid-cols-4">
+            <div>
+              <label className="label" htmlFor="entityNif">NIF <span className="font-normal text-slate-400">(opcional)</span></label>
+              <input id="entityNif" className="input" value={values.entityNif} maxLength={30}
+                onChange={(e) => set("entityNif", e.target.value)} placeholder="Ex.: 500000000" />
+            </div>
+            <div>
+              <label className="label" htmlFor="contactName">Pessoa de contacto</label>
+              <input id="contactName" className="input" value={values.contactName} maxLength={120}
+                onChange={(e) => set("contactName", e.target.value)} placeholder="Nome" />
+            </div>
+            <div>
+              <label className="label" htmlFor="contactEmail">Email</label>
+              <input id="contactEmail" type="email" className="input" value={values.contactEmail} maxLength={200}
+                onChange={(e) => set("contactEmail", e.target.value)} placeholder="nome@entidade.pt" />
+            </div>
+            <div>
+              <label className="label" htmlFor="contactPhone">Telefone</label>
+              <input id="contactPhone" type="tel" className="input" value={values.contactPhone} maxLength={40}
+                onChange={(e) => set("contactPhone", e.target.value)} placeholder="+351 …" />
+            </div>
+          </div>
           <div>
             <label className="label" htmlFor="startDate">Data de início *</label>
             <input id="startDate" type="date" className="input" required value={values.startDate}
@@ -156,6 +218,38 @@ export default function ContractForm({
             <label className="label" htmlFor="endDate">Data de fim *</label>
             <input id="endDate" type="date" className="input" required value={values.endDate}
               min={values.startDate || undefined} onChange={(e) => set("endDate", e.target.value)} />
+          </div>
+          <div className="rounded-md border border-slate-200 bg-slate-50/60 p-4 sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-800">
+              <input id="autoRenew" type="checkbox" checked={values.autoRenew} className="accent-indigo-600"
+                onChange={(e) => set("autoRenew", e.target.checked)} />
+              Renova automaticamente no fim do período
+            </label>
+            <div className="mt-3 grid gap-4 sm:grid-cols-3">
+              {values.autoRenew && (
+                <div>
+                  <label className="label" htmlFor="renewalMonths">Cada renovação dura (meses) *</label>
+                  <input id="renewalMonths" type="number" min={1} max={120} step={1} className="input" required
+                    value={values.renewalMonths} onChange={(e) => set("renewalMonths", e.target.value)} placeholder="Ex.: 12" />
+                </div>
+              )}
+              <div>
+                <label className="label" htmlFor="noticeDays">
+                  Aviso prévio para denunciar (dias) <span className="font-normal text-slate-400">(opcional)</span>
+                </label>
+                <input id="noticeDays" type="number" min={0} max={3650} step={1} className="input"
+                  value={values.noticeDays} onChange={(e) => set("noticeDays", e.target.value)} placeholder="Ex.: 60" />
+              </div>
+              <div className="flex items-end text-sm text-slate-600">
+                {noticePreview ? (
+                  <p>Data limite de denúncia: <strong className="text-slate-900">{noticePreview}</strong>
+                    {values.autoRenew && <span className="block text-xs text-slate-500">e o mesmo prazo antes de cada renovação</span>}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500">Indique o aviso prévio para calcular a data limite de denúncia.</p>
+                )}
+              </div>
+            </div>
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="scope">
@@ -171,22 +265,51 @@ export default function ContractForm({
               onChange={(e) => set("obligations", e.target.value)}
               placeholder="Descreva as obrigações de cada parte…" />
           </div>
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="documentUrl">
-              Link do documento <span className="font-normal text-slate-400">(opcional)</span>
-            </label>
-            <input id="documentUrl" type="url" className="input" value={values.documentUrl}
-              onChange={(e) => set("documentUrl", e.target.value)}
-              placeholder="https://….sharepoint.com/…" />
-            <p className="mt-1 text-xs text-slate-500">
-              Cole o link da cópia do contrato no SharePoint (no SharePoint: Partilhar → Copiar ligação).
-            </p>
-          </div>
         </div>
       </section>
 
       <section className="card p-5">
-        <h2 className="mb-4 text-base font-semibold text-slate-900">Acesso</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Documentos</h2>
+            <p className="text-sm text-slate-500">Links para o contrato, aditamentos, adendas… (no SharePoint: Partilhar → Copiar ligação).</p>
+          </div>
+          <button type="button" className="btn btn-secondary"
+            onClick={() => set("documents", [...values.documents, { key: newKey(), name: values.documents.length ? "" : "Contrato", url: "" }])}>
+            + Adicionar documento
+          </button>
+        </div>
+        {values.documents.length === 0 ? (
+          <p className="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+            Sem documentos associados.
+          </p>
+        ) : (
+          <ol className="space-y-3">
+            {values.documents.map((d, i) => (
+              <li key={d.key} className="grid gap-3 rounded-md border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-end" data-testid="document-row">
+                <div>
+                  <label className="label" htmlFor={`${d.key}-name`}>Nome *</label>
+                  <input id={`${d.key}-name`} className="input" required maxLength={120} value={d.name}
+                    onChange={(e) => setDocument(d.key, { name: e.target.value })} placeholder="Ex.: Aditamento n.º 1" />
+                </div>
+                <div>
+                  <label className="label" htmlFor={`${d.key}-url`}>Link *</label>
+                  <input id={`${d.key}-url`} type="url" className="input" required value={d.url}
+                    onChange={(e) => setDocument(d.key, { url: e.target.value })} placeholder="https://….sharepoint.com/…" />
+                </div>
+                <button type="button" className="text-sm text-red-600 hover:underline sm:mb-2"
+                  aria-label={`Remover documento ${i + 1}`}
+                  onClick={() => set("documents", values.documents.filter((x) => x.key !== d.key))}>
+                  Remover
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="card p-5">
+        <h2 className="mb-4 text-base font-semibold text-slate-900">Acesso e responsável</h2>
         <fieldset>
           <legend className="label">Visibilidade *</legend>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -215,6 +338,17 @@ export default function ContractForm({
           {teams.length === 0 && (
             <p className="mt-1 text-xs text-amber-700">Não pertence a nenhuma equipa. Peça a um administrador para o associar.</p>
           )}
+        </div>
+        <div className="mt-4 max-w-sm">
+          <label className="label" htmlFor="responsibleId">
+            Responsável interno <span className="font-normal text-slate-400">(opcional)</span>
+          </label>
+          <select id="responsibleId" className="input" value={values.responsibleId}
+            onChange={(e) => set("responsibleId", e.target.value)}>
+            <option value="">— Sem responsável —</option>
+            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          <p className="mt-1 text-xs text-slate-500">Quem gere o contrato na {OUR_COMPANY}. Consegue sempre ver o contrato.</p>
         </div>
       </section>
 

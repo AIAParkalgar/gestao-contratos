@@ -12,17 +12,18 @@ datasource db {
 
 // role: "USER" | "ADMIN"
 model User {
-  id           String     @id @default(cuid())
-  name         String
-  email        String     @unique
-  passwordHash String
-  role         String     @default("USER")
-  active       Boolean    @default(true)
-  teams        Team[]     @relation("UserTeams")
-  contracts    Contract[] @relation("ContractCreator")
-  sessions     Session[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  name           String
+  email          String     @unique
+  passwordHash   String
+  role           String     @default("USER")
+  active         Boolean    @default(true)
+  teams          Team[]     @relation("UserTeams")
+  contracts      Contract[] @relation("ContractCreator")
+  responsibleFor Contract[] @relation("ContractResponsible")
+  sessions       Session[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model Team {
@@ -44,27 +45,66 @@ model Session {
 
 // visibility: "PUBLICO" | "RESTRITO" | "CONFIDENCIAL"
 model Contract {
-  id          String    @id @default(cuid())
-  type        String
-  entity      String // entidade contratante
-  startDate   DateTime
-  endDate     DateTime
-  scope       String? // âmbito: propósito do contrato
-  obligations String
-  documentUrl String? // link para a cópia do contrato (ex.: SharePoint)
-  visibility  String    @default("RESTRITO")
-  teamId      String? // obrigatório quando visibility = RESTRITO
-  team        Team?     @relation(fields: [teamId], references: [id])
-  creatorId   String
-  creator     User      @relation("ContractCreator", fields: [creatorId], references: [id])
-  payments    Payment[]
-  dates       ContractDate[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String             @id @default(cuid())
+  type          String
+  entity        String // entidade contratante
+  entityNif     String? // NIF / número fiscal da entidade
+  contactName   String? // pessoa de contacto na entidade
+  contactEmail  String?
+  contactPhone  String?
+  startDate     DateTime
+  endDate       DateTime
+  autoRenew     Boolean            @default(false) // renova automaticamente no fim de cada período
+  renewalMonths Int? // duração de cada renovação (meses)
+  noticeDays    Int? // dias de aviso prévio para denunciar a renovação
+  scope         String? // âmbito: propósito do contrato
+  obligations   String
+  visibility    String             @default("RESTRITO")
+  teamId        String? // obrigatório quando visibility = RESTRITO
+  team          Team?              @relation(fields: [teamId], references: [id])
+  creatorId     String
+  creator       User               @relation("ContractCreator", fields: [creatorId], references: [id])
+  responsibleId String? // responsável interno (gestor do contrato)
+  responsible   User?              @relation("ContractResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  payments      Payment[]
+  dates         ContractDate[]
+  documents     ContractDocument[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([visibility])
   @@index([teamId])
   @@index([creatorId])
+  @@index([responsibleId])
+}
+
+// Documentos do contrato (links, ex.: SharePoint): contrato, aditamentos, adendas…
+model ContractDocument {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  name       String
+  url        String
+  order      Int      @default(0)
+
+  @@index([contractId])
+}
+
+// Histórico de alterações dos contratos. Sem chave estrangeira, para sobreviver ao apagar.
+// action: "CRIADO" | "ALTERADO" | "APAGADO"
+model AuditLog {
+  id         String   @id @default(cuid())
+  contractId String
+  entity     String // nome da entidade no momento do registo
+  userId     String?
+  userName   String
+  action     String
+  changes    Json? // [{ field, label, before, after }]
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([contractId, createdAt])
+  @@index([createdAt])
 }
 
 // direction: "PARKALGAR_PARA_ENTIDADE" | "ENTIDADE_PARA_PARKALGAR"

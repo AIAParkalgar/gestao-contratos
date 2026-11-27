@@ -65,22 +65,27 @@ async function main() {
     data: {
       type: "Patrocínio", entity: "Marca Exemplo, S.A.",
       scope: "Patrocínio principal do evento, com direitos de naming na bancada central.", visibility: "PUBLICO", teamId: await team("Comercial"),
-      startDate: d("2026-01-01"), endDate: d("2027-12-31"), creatorId: ana.id,
+      startDate: d("2026-01-01"), endDate: d("2027-12-31"), creatorId: ana.id, responsibleId: ana.id,
+      autoRenew: true, renewalMonths: 12, noticeDays: 60,
+      entityNif: "500000000", contactName: "Rita Marques", contactEmail: "rita.marques@marca-exemplo.pt", contactPhone: "+351 210 000 000",
+      documents: { create: [
+        { order: 0, name: "Contrato", url: "https://exemplo.sharepoint.com/sites/contratos/marca-exemplo.pdf" },
+        { order: 1, name: "Aditamento n.º 1", url: "https://exemplo.sharepoint.com/sites/contratos/marca-exemplo-aditamento-1.pdf" },
+      ] },
       obligations: "Patrocinador: pagamento das tranches acordadas.\nEmpresa: exposição de marca nos suportes do evento e 20 convites VIP.",
       payments: { create: [
         { order: 0, direction: "ENTIDADE_PARA_PARKALGAR", date: d("2026-03-01"), mode: "VALOR", amountCents: 5_000_000 },
         { order: 1, direction: "ENTIDADE_PARA_PARKALGAR", date: d("2027-03-01"), mode: "VALOR", amountCents: 5_000_000 },
       ] },
       dates: { create: [
-        { order: 0, kind: "AVISO_PREVIO", date: d("2027-10-31"), note: "Comunicar a não renovação até esta data" },
-        { order: 1, kind: "RENOVACAO", date: d("2028-01-01"), note: "Renovação automática por 1 ano" },
+        { order: 0, kind: "OUTRA", label: "Revisão anual das contrapartidas", date: d("2027-06-30"), note: "Rever visibilidade de marca" },
       ] },
     },
   });
   await prisma.contract.create({
     data: {
       type: "Prestação de serviços", entity: "Agência Criativa, Lda.", visibility: "RESTRITO", teamId: await team("Comunicação"),
-      startDate: d("2026-06-01"), endDate: d("2026-12-15"), creatorId: bruno.id,
+      startDate: d("2026-06-01"), endDate: d("2026-12-15"), creatorId: bruno.id, responsibleId: bruno.id, noticeDays: 30,
       obligations: "Agência: campanha digital e gestão de redes sociais.\nEmpresa: aprovação de conteúdos em 48h.",
       payments: { create: [
         { order: 0, direction: "PARKALGAR_PARA_ENTIDADE", date: d("2026-06-15"), mode: "VALOR", amountCents: 1_200_000 },
@@ -91,7 +96,7 @@ async function main() {
   await prisma.contract.create({
     data: {
       type: "Fornecimento", entity: "Logística Sul, Lda.", visibility: "RESTRITO", teamId: await team("Operações"),
-      startDate: d("2027-01-01"), endDate: d("2027-06-30"), creatorId: carla.id,
+      startDate: d("2027-01-01"), endDate: d("2027-06-30"), creatorId: carla.id, responsibleId: carla.id,
       obligations: "Fornecimento de geradores e estruturas temporárias.",
       payments: { create: [
         { order: 0, direction: "PARKALGAR_PARA_ENTIDADE", date: d("2027-01-10"), mode: "VALOR", amountCents: 800_000 },
@@ -101,7 +106,7 @@ async function main() {
   await prisma.contract.create({
     data: {
       type: "Acordo de confidencialidade (NDA)", entity: "Parceiro Estratégico", visibility: "CONFIDENCIAL", teamId: null,
-      startDate: d("2025-01-01"), endDate: d("2025-12-31"), creatorId: ana.id,
+      startDate: d("2025-01-01"), endDate: d("2025-12-31"), creatorId: ana.id, responsibleId: ana.id,
       obligations: "Confidencialidade mútua sobre as negociações em curso.",
     },
   });

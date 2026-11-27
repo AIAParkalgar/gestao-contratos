@@ -7,7 +7,11 @@ Plataforma web para registar e consultar contratos, com login e controlo de aces
 - **Login** com email e password. Não há registo público: as contas são criadas por um administrador.
 - **Perfis**: Utilizador e Administrador.
 - **Equipas**: começam com Comercial, Comunicação e Operações e são geridas pelos administradores. Um utilizador pode pertencer a várias equipas.
-- **Contratos**: tipo, entidade contratante, data de início, data de fim, âmbito (scope), obrigações, link para o documento (ex.: SharePoint), equipa e visibilidade.
+- **Painel inicial**: contratos ativos, o que termina ou renova nos próximos 60 dias, limites de denúncia, pagamentos dos próximos 30 dias e os contratos de que sou responsável.
+- **Contratos**: tipo, entidade contratante (NIF e contactos), datas, renovação automática (duração e aviso prévio, com cálculo da data limite de denúncia), âmbito (scope), obrigações, documentos (vários links, ex.: SharePoint), equipa, visibilidade e responsável interno.
+- **Duplicar contrato**: cria um novo contrato a partir de uma cópia de outro.
+- **Histórico de alterações**: quem criou, alterou (e o quê) ou apagou cada contrato; vista geral para administradores.
+- **Exportar para Excel** (administradores): contratos, pagamentos e outras datas, com os filtros da lista.
 - **Calendário de pagamentos**: De e Para (sempre entre a Parkalgar e a entidade contratante, indicando se é a receber ou a pagar), Data e um montante, que pode ser:
   - um **valor** fixo em euros, ou
   - uma **percentagem** (com o campo "Percentagem de" em texto livre, ex.: "receita de bilheteira").
@@ -26,6 +30,8 @@ Plataforma web para registar e consultar contratos, com login e controlo de aces
 | Público | Todos os utilizadores | Quem criou + Admin |
 | Restrito | Membros da equipa do contrato + quem criou | Quem criou + Admin |
 | Confidencial | Só quem criou | Quem criou + Admin |
+
+O responsável interno de um contrato vê-o sempre, mesmo que não pertença à equipa ou que o contrato seja confidencial.
 
 Os administradores veem e podem editar todos os contratos. As regras são aplicadas no servidor
 (`src/lib/access.ts`): um utilizador sem acesso recebe "não encontrado", mesmo que abra o URL diretamente.
@@ -97,8 +103,8 @@ e guarde-o numa nova pasta em `prisma/migrations/`.
 
 - Anexar o PDF do contrato
 - Alertas por email de fim de contrato, pagamentos e prazos de aviso prévio
+- Estado dos pagamentos (pendente / pago) e pagamentos em atraso
 - Estado de cada pagamento (pendente / pago)
 - Valor total do contrato e cálculo das percentagens
-- Histórico de alterações (auditoria)
 - Login com Microsoft 365
 - Domínio próprio (ex.: contratos.empresa.pt)

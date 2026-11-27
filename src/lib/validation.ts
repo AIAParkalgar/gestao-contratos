@@ -50,26 +50,47 @@ export const contractDateSchema = z
     }
   });
 
-const documentUrl = z
-  .string()
-  .trim()
-  .max(2000, "link demasiado longo")
-  .optional()
-  .transform((v) => (v ? v : null))
-  .refine((v) => {
-    if (!v) return true;
-    try {
-      const u = new URL(v);
-      return u.protocol === "https:" || u.protocol === "http:";
-    } catch {
-      return false;
-    }
-  }, "link inválido (deve começar por https://)");
+const isHttpUrl = (v: string) => {
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
+
+export const documentSchema = z.object({
+  name: required("indique o nome do documento").pipe(z.string().max(120, "demasiado longo")),
+  url: z.string().trim().max(2000, "link demasiado longo").refine(isHttpUrl, "link inválido (deve começar por https://)"),
+});
+
+/** Texto opcional: "" → null. */
+const optionalText = (max: number) =>
+  z.string().trim().max(max, "demasiado longo").optional().transform((v) => (v ? v : null));
+
+/** Inteiro opcional vindo de um campo de texto: "" → null. */
+const optionalInt = (min: number, max: number, msg: string) =>
+  z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => (v === undefined || v === "" ? null : Number(v)))
+    .refine((v) => v === null || (Number.isInteger(v) && v >= min && v <= max), msg);
 
 export const contractSchema = z
   .object({
     type: required(),
     entity: required(),
+    entityNif: optionalText(30),
+    contactName: optionalText(120),
+    contactEmail: optionalText(200).refine(
+      (v) => v === null || z.string().email().safeParse(v).success,
+      "email inválido",
+    ),
+    contactPhone: optionalText(40),
+    autoRenew: z.boolean().default(false),
+    renewalMonths: optionalInt(1, 120, "entre 1 e 120 meses"),
+    noticeDays: optionalInt(0, 3650, "entre 0 e 3650 dias"),
+    responsibleId: z.string().optional().transform((v) => (v ? v : null)),
     startDate: isoDate,
     endDate: isoDate,
     scope: z
@@ -79,7 +100,7 @@ export const contractSchema = z
       .optional()
       .transform((v) => (v ? v : null)),
     obligations: required(),
-    documentUrl,
+    documents: z.array(documentSchema).max(50).default([]),
     visibility: z.enum(VISIBILITIES, { errorMap: () => ({ message: "opção inválida" }) }),
     teamId: z
       .string()
@@ -91,6 +112,9 @@ export const contractSchema = z
   .superRefine((d, ctx) => {
     if (d.endDate < d.startDate) {
       ctx.addIssue({ code: "custom", path: ["endDate"], message: "não pode ser anterior à data de início" });
+    }
+    if (d.autoRenew && !d.renewalMonths) {
+      ctx.addIssue({ code: "custom", path: ["renewalMonths"], message: "indique a duração de cada renovação" });
     }
     if (d.visibility === "RESTRITO" && !d.teamId) {
       ctx.addIssue({ code: "custom", path: ["teamId"], message: "obrigatória para contratos restritos" });
@@ -119,8 +143,14 @@ const FIELD_LABELS: Record<string, string> = {
   startDate: "Data de início",
   endDate: "Data de fim",
   scope: "Âmbito",
+  entityNif: "NIF da entidade",
+  contactName: "Pessoa de contacto",
+  contactEmail: "Email de contacto",
+  contactPhone: "Telefone de contacto",
+  renewalMonths: "Renovação (meses)",
+  noticeDays: "Aviso prévio (dias)",
+  responsibleId: "Responsável",
   obligations: "Obrigações",
-  documentUrl: "Link do documento",
   visibility: "Visibilidade",
   teamId: "Equipa",
   name: "Nome",
@@ -150,6 +180,10 @@ const DATE_LABELS: Record<string, string> = {
 export function formatZodErrors(error: z.ZodError): string[] {
   return error.issues.map((issue) => {
     const [first, index, field] = issue.path;
+    if (first === "documents" && typeof index === "number") {
+      const label = field === "name" ? "Nome" : field === "url" ? "Link" : "";
+      return `Documento ${index + 1}${label ? ` — ${label}` : ""}: ${issue.message}`;
+    }
     if (first === "dates" && typeof index === "number") {
       const label = DATE_LABELS[String(field)] ?? "";
       return `Data relevante ${index + 1}${label ? ` — ${label}` : ""}: ${issue.message}`;

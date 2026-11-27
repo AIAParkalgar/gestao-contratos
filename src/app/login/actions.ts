@@ -38,7 +38,7 @@ export async function login(input: { email: string; password: string }): Promise
     prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
   ]);
   await createSession(user.id);
-  redirect("/contratos");
+  redirect("/painel");
 }
 
 export async function logout() {

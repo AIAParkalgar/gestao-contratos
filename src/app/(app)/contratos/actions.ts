@@ -4,28 +4,39 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { canEditContract } from "@/lib/access";
+import { canEditContract, contractAccessWhere } from "@/lib/access";
+import { contractFullInclude, contractSnapshot, diffSnapshots, logAudit } from "@/lib/audit";
 import { isoToDate } from "@/lib/format";
 import { contractSchema, formatZodErrors } from "@/lib/validation";
 
 export type ActionResult = { errors: string[] } | undefined;
 
-export async function saveContract(contractId: string | null, input: unknown): Promise<ActionResult> {
+function revalidateContracts() {
+  revalidatePath("/contratos");
+  revalidatePath("/calendario");
+  revalidatePath("/painel");
+}
+
+/**
+ * Cria (contractId = null) ou atualiza um contrato.
+ * `duplicatedFrom`: id do contrato que serviu de base, só para o histórico.
+ */
+export async function saveContract(
+  contractId: string | null,
+  input: unknown,
+  duplicatedFrom?: string | null,
+): Promise<ActionResult> {
   const user = await requireUser();
 
   const parsed = contractSchema.safeParse(input);
   if (!parsed.success) return { errors: formatZodErrors(parsed.error) };
   const d = parsed.data;
 
-  let existing: { creatorId: string; teamId: string | null } | null = null;
-  if (contractId) {
-    existing = await prisma.contract.findUnique({
-      where: { id: contractId },
-      select: { creatorId: true, teamId: true },
-    });
-    if (!existing || !canEditContract(user, existing)) {
-      return { errors: ["Não tem permissão para editar este contrato."] };
-    }
+  const existing = contractId
+    ? await prisma.contract.findUnique({ where: { id: contractId }, include: contractFullInclude })
+    : null;
+  if (contractId && (!existing || !canEditContract(user, existing))) {
+    return { errors: ["Não tem permissão para editar este contrato."] };
   }
 
   if (d.teamId) {
@@ -37,16 +48,28 @@ export async function saveContract(contractId: string | null, input: unknown): P
     }
   }
 
+  if (d.responsibleId && d.responsibleId !== existing?.responsibleId) {
+    const responsible = await prisma.user.findUnique({ where: { id: d.responsibleId } });
+    if (!responsible || !responsible.active) return { errors: ["Responsável: escolha um utilizador ativo."] };
+  }
+
   const data = {
     type: d.type,
     entity: d.entity,
+    entityNif: d.entityNif,
+    contactName: d.contactName,
+    contactEmail: d.contactEmail,
+    contactPhone: d.contactPhone,
     startDate: isoToDate(d.startDate),
     endDate: isoToDate(d.endDate),
+    autoRenew: d.autoRenew,
+    renewalMonths: d.autoRenew ? d.renewalMonths : null,
+    noticeDays: d.noticeDays,
     scope: d.scope,
     obligations: d.obligations,
-    documentUrl: d.documentUrl,
     visibility: d.visibility,
     teamId: d.teamId,
+    responsibleId: d.responsibleId,
   };
   const payments = d.payments.map((p, order) => ({
     order,
@@ -57,7 +80,6 @@ export async function saveContract(contractId: string | null, input: unknown): P
     percentage: p.mode === "PERCENTAGEM" ? p.percentage : null,
     percentageBase: p.mode === "PERCENTAGEM" ? p.percentageBase : null,
   }));
-
   const dates = d.dates.map((x, order) => ({
     order,
     kind: x.kind,
@@ -65,41 +87,56 @@ export async function saveContract(contractId: string | null, input: unknown): P
     date: isoToDate(x.date),
     note: x.note || null,
   }));
+  const documents = d.documents.map((x, order) => ({ order, name: x.name, url: x.url }));
+  const nested = { payments: { create: payments }, dates: { create: dates }, documents: { create: documents } };
 
   let id: string;
-  if (contractId) {
+  if (contractId && existing) {
     await prisma.$transaction([
       prisma.payment.deleteMany({ where: { contractId } }),
       prisma.contractDate.deleteMany({ where: { contractId } }),
-      prisma.contract.update({
-        where: { id: contractId },
-        data: { ...data, payments: { create: payments }, dates: { create: dates } },
-      }),
+      prisma.contractDocument.deleteMany({ where: { contractId } }),
+      prisma.contract.update({ where: { id: contractId }, data: { ...data, ...nested } }),
     ]);
     id = contractId;
+    const after = await prisma.contract.findUniqueOrThrow({ where: { id }, include: contractFullInclude });
+    const changes = diffSnapshots(contractSnapshot(existing), contractSnapshot(after));
+    if (changes.length) await logAudit(user, { contractId: id, entity: after.entity, action: "ALTERADO", changes });
   } else {
-    const created = await prisma.contract.create({
-      data: { ...data, creatorId: user.id, payments: { create: payments }, dates: { create: dates } },
-    });
+    const created = await prisma.contract.create({ data: { ...data, creatorId: user.id, ...nested } });
     id = created.id;
+    let note: string | undefined;
+    if (duplicatedFrom) {
+      const source = await prisma.contract.findFirst({
+        where: { AND: [{ id: duplicatedFrom }, contractAccessWhere(user)] },
+        select: { entity: true, type: true },
+      });
+      if (source) note = `Criado a partir de uma cópia de "${source.entity}" (${source.type})`;
+    }
+    await logAudit(user, { contractId: id, entity: created.entity, action: "CRIADO", note });
   }
 
-  revalidatePath("/contratos");
-  revalidatePath("/calendario");
+  revalidateContracts();
   redirect(`/contratos/${id}`);
 }
 
 export async function deleteContract(contractId: string): Promise<ActionResult> {
   const user = await requireUser();
-  const contract = await prisma.contract.findUnique({
-    where: { id: contractId },
-    select: { creatorId: true },
-  });
+  const contract = await prisma.contract.findUnique({ where: { id: contractId }, include: contractFullInclude });
   if (!contract || !canEditContract(user, contract)) {
     return { errors: ["Não tem permissão para apagar este contrato."] };
   }
+  const snapshot = contractSnapshot(contract);
   await prisma.contract.delete({ where: { id: contractId } });
-  revalidatePath("/contratos");
-  revalidatePath("/calendario");
+  // Guarda o conteúdo do contrato apagado no histórico (campos preenchidos).
+  await logAudit(user, {
+    contractId,
+    entity: contract.entity,
+    action: "APAGADO",
+    changes: Object.entries(snapshot)
+      .filter(([, v]) => v.value)
+      .map(([field, v]) => ({ field, label: v.label, before: v.value, after: "" })),
+  });
+  revalidateContracts();
   redirect("/contratos");
 }

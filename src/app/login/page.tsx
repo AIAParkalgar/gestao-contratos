@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import LoginForm from "./LoginForm";
 
 export default async function LoginPage() {
-  if (await getCurrentUser()) redirect("/contratos");
+  if (await getCurrentUser()) redirect("/painel");
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">

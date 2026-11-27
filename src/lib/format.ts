@@ -42,15 +42,17 @@ export type ContractStatus = {
   label: string;
 };
 
-export function contractStatus(start: Date, end: Date): ContractStatus {
+/** `end` deve ser o fim do período em curso (ver currentTermEnd em terms.ts). */
+export function contractStatus(start: Date, end: Date, autoRenew = false): ContractStatus {
   const today = isoToDate(todayISO()).getTime();
   if (start.getTime() > today) return { key: "FUTURO", label: "Por iniciar" };
   if (end.getTime() < today) return { key: "TERMINADO", label: "Terminado" };
   const days = Math.round((end.getTime() - today) / DAY_MS);
   if (days <= 30) {
+    const verb = autoRenew ? "Renova" : "Termina";
     return {
       key: "A_TERMINAR",
-      label: days === 0 ? "Termina hoje" : `Termina em ${days} dia${days === 1 ? "" : "s"}`,
+      label: days === 0 ? `${verb} hoje` : `${verb} em ${days} dia${days === 1 ? "" : "s"}`,
     };
   }
   return { key: "ATIVO", label: "Ativo" };

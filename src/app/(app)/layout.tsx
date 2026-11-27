@@ -7,6 +7,7 @@ import NavLinks from "@/components/NavLinks";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const links = [
+    { href: "/painel", label: "Início" },
     { href: "/contratos", label: "Contratos" },
     { href: "/calendario", label: "Calendário" },
     { href: "/contratos/novo", label: "Novo contrato" },
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ? [
           { href: "/admin/utilizadores", label: "Utilizadores" },
           { href: "/admin/equipas", label: "Equipas" },
+          { href: "/admin/historico", label: "Histórico" },
         ]
       : []),
   ];
@@ -23,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/contratos" className="font-semibold text-slate-900">Gestão de Contratos</Link>
+            <Link href="/painel" className="font-semibold text-slate-900">Gestão de Contratos</Link>
             <NavLinks links={links} />
           </div>
           <div className="flex items-center gap-3 text-sm">
