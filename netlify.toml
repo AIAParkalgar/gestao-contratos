@@ -1,0 +1,7 @@
+# Configuração da Netlify. A Netlify deteta o Next.js automaticamente.
+[build]
+  # 1) aplica as migrações à base de dados  2) cria equipas/admin se faltarem  3) compila a app
+  command = "npm run build:netlify"
+
+[build.environment]
+  NODE_VERSION = "22"

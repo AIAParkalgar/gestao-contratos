@@ -1,0 +1,91 @@
+generator client {
+  provider      = "prisma-client-js"
+  // "native" para desenvolvimento local; "rhel-openssl-3.0.x" para as funções da Netlify (AWS Lambda)
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // ligação via pooler (usada pela app)
+  directUrl = env("DIRECT_URL") // ligação direta/sessão (usada pelas migrações)
+}
+
+// role: "USER" | "ADMIN"
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         String     @default("USER")
+  active       Boolean    @default(true)
+  teams        Team[]     @relation("UserTeams")
+  contracts    Contract[] @relation("ContractCreator")
+  sessions     Session[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Team {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  users     User[]     @relation("UserTeams")
+  contracts Contract[]
+}
+
+model Session {
+  id        String   @id // sha256 do token guardado no cookie
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// visibility: "PUBLICO" | "RESTRITO" | "CONFIDENCIAL"
+model Contract {
+  id          String    @id @default(cuid())
+  type        String
+  entity      String // entidade contratante
+  startDate   DateTime
+  endDate     DateTime
+  obligations String
+  visibility  String    @default("RESTRITO")
+  teamId      String? // obrigatório quando visibility = RESTRITO
+  team        Team?     @relation(fields: [teamId], references: [id])
+  creatorId   String
+  creator     User      @relation("ContractCreator", fields: [creatorId], references: [id])
+  payments    Payment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([visibility])
+  @@index([teamId])
+  @@index([creatorId])
+}
+
+// mode: "VALOR" | "PERCENTAGEM"
+model Payment {
+  id             String   @id @default(cuid())
+  contractId     String
+  contract       Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  fromParty      String // De
+  toParty        String // Para
+  date           DateTime
+  mode           String
+  amountCents    Int? // quando mode = VALOR (em cêntimos de euro)
+  percentage     Float? // quando mode = PERCENTAGEM
+  percentageBase String? // percentagem de quê (texto livre)
+  order          Int      @default(0)
+
+  @@index([contractId])
+}
+
+// Tentativas de login falhadas, para bloquear ataques de força bruta.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}
