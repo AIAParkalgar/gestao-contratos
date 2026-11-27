@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/lib/useHydrated";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { saveUser } from "@/app/(app)/admin/utilizadores/actions";
@@ -29,6 +30,7 @@ export default function UserForm({
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   const toggleTeam = (id: string) =>
     setValues((v) => ({
@@ -103,7 +105,7 @@ export default function UserForm({
 
       <div className="flex justify-end gap-3">
         <Link href="/admin/utilizadores" className="btn btn-secondary">Cancelar</Link>
-        <button type="submit" className="btn btn-primary" disabled={pending}>
+        <button type="submit" className="btn btn-primary" disabled={pending || !hydrated}>
           {pending ? "A guardar…" : userId ? "Guardar alterações" : "Criar utilizador"}
         </button>
       </div>

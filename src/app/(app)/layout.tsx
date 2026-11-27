@@ -8,6 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const links = [
     { href: "/contratos", label: "Contratos" },
+    { href: "/calendario", label: "Calendário" },
     { href: "/contratos/novo", label: "Novo contrato" },
     ...(user.role === "ADMIN" ? [{ href: "/admin/utilizadores", label: "Utilizadores" }] : []),
   ];

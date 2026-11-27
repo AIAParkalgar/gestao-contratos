@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/lib/useHydrated";
 import { useState, useTransition } from "react";
 import { login } from "./actions";
 import ErrorBox from "@/components/ErrorBox";
@@ -9,6 +10,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +34,7 @@ export default function LoginForm() {
         <input id="password" type="password" autoComplete="current-password" required className="input"
           value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
-      <button type="submit" className="btn btn-primary w-full" disabled={pending}>
+      <button type="submit" className="btn btn-primary w-full" disabled={pending || !hydrated}>
         {pending ? "A entrar…" : "Entrar"}
       </button>
     </form>

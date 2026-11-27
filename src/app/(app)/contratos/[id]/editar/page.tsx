@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canEditContract, contractAccessWhere } from "@/lib/access";
 import { dateToISO } from "@/lib/format";
-import type { PaymentMode, Visibility } from "@/lib/constants";
+import type { DateKind, PaymentDirection, PaymentMode, Visibility } from "@/lib/constants";
 import ContractForm from "@/components/ContractForm";
 
 export default async function EditContractPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +11,11 @@ export default async function EditContractPage({ params }: { params: Promise<{ i
   const user = await requireUser();
   const contract = await prisma.contract.findFirst({
     where: { AND: [{ id }, contractAccessWhere(user)] },
-    include: { team: true, payments: { orderBy: [{ order: "asc" }, { date: "asc" }] } },
+    include: {
+      team: true,
+      payments: { orderBy: [{ order: "asc" }, { date: "asc" }] },
+      dates: { orderBy: [{ order: "asc" }, { date: "asc" }] },
+    },
   });
   if (!contract || !canEditContract(user, contract)) notFound();
 
@@ -35,17 +39,24 @@ export default async function EditContractPage({ params }: { params: Promise<{ i
           startDate: dateToISO(contract.startDate),
           endDate: dateToISO(contract.endDate),
           obligations: contract.obligations,
+          documentUrl: contract.documentUrl ?? "",
           visibility: contract.visibility as Visibility,
           teamId: contract.teamId ?? "",
           payments: contract.payments.map((p) => ({
             key: p.id,
-            fromParty: p.fromParty,
-            toParty: p.toParty,
+            direction: p.direction as PaymentDirection,
             date: dateToISO(p.date),
             mode: p.mode as PaymentMode,
             amount: p.amountCents != null ? (p.amountCents / 100).toFixed(2) : "",
             percentage: p.percentage != null ? String(p.percentage) : "",
             percentageBase: p.percentageBase ?? "",
+          })),
+          dates: contract.dates.map((x) => ({
+            key: x.id,
+            kind: x.kind as DateKind,
+            label: x.label ?? "",
+            date: dateToISO(x.date),
+            note: x.note ?? "",
           })),
         }}
       />

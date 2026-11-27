@@ -64,8 +64,12 @@ async function main() {
       startDate: d("2026-01-01"), endDate: d("2027-12-31"), creatorId: ana.id,
       obligations: "Patrocinador: pagamento das tranches acordadas.\nEmpresa: exposição de marca nos suportes do evento e 20 convites VIP.",
       payments: { create: [
-        { order: 0, fromParty: "Marca Exemplo, S.A.", toParty: "Empresa", date: d("2026-03-01"), mode: "VALOR", amountCents: 5_000_000 },
-        { order: 1, fromParty: "Marca Exemplo, S.A.", toParty: "Empresa", date: d("2027-03-01"), mode: "VALOR", amountCents: 5_000_000 },
+        { order: 0, direction: "ENTIDADE_PARA_PARKALGAR", date: d("2026-03-01"), mode: "VALOR", amountCents: 5_000_000 },
+        { order: 1, direction: "ENTIDADE_PARA_PARKALGAR", date: d("2027-03-01"), mode: "VALOR", amountCents: 5_000_000 },
+      ] },
+      dates: { create: [
+        { order: 0, kind: "AVISO_PREVIO", date: d("2027-10-31"), note: "Comunicar a não renovação até esta data" },
+        { order: 1, kind: "RENOVACAO", date: d("2028-01-01"), note: "Renovação automática por 1 ano" },
       ] },
     },
   });
@@ -75,8 +79,8 @@ async function main() {
       startDate: d("2026-06-01"), endDate: d("2026-12-15"), creatorId: bruno.id,
       obligations: "Agência: campanha digital e gestão de redes sociais.\nEmpresa: aprovação de conteúdos em 48h.",
       payments: { create: [
-        { order: 0, fromParty: "Empresa", toParty: "Agência Criativa, Lda.", date: d("2026-06-15"), mode: "VALOR", amountCents: 1_200_000 },
-        { order: 1, fromParty: "Empresa", toParty: "Agência Criativa, Lda.", date: d("2026-12-15"), mode: "PERCENTAGEM", percentage: 5, percentageBase: "receita de bilheteira online gerada pela campanha" },
+        { order: 0, direction: "PARKALGAR_PARA_ENTIDADE", date: d("2026-06-15"), mode: "VALOR", amountCents: 1_200_000 },
+        { order: 1, direction: "PARKALGAR_PARA_ENTIDADE", date: d("2026-12-15"), mode: "PERCENTAGEM", percentage: 5, percentageBase: "receita de bilheteira online gerada pela campanha" },
       ] },
     },
   });
@@ -86,7 +90,7 @@ async function main() {
       startDate: d("2027-01-01"), endDate: d("2027-06-30"), creatorId: carla.id,
       obligations: "Fornecimento de geradores e estruturas temporárias.",
       payments: { create: [
-        { order: 0, fromParty: "Empresa", toParty: "Logística Sul, Lda.", date: d("2027-01-10"), mode: "VALOR", amountCents: 800_000 },
+        { order: 0, direction: "PARKALGAR_PARA_ENTIDADE", date: d("2027-01-10"), mode: "VALOR", amountCents: 800_000 },
       ] },
     },
   });

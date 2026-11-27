@@ -43,13 +43,13 @@ export async function saveContract(contractId: string | null, input: unknown): P
     startDate: isoToDate(d.startDate),
     endDate: isoToDate(d.endDate),
     obligations: d.obligations,
+    documentUrl: d.documentUrl,
     visibility: d.visibility,
     teamId: d.teamId,
   };
   const payments = d.payments.map((p, order) => ({
     order,
-    fromParty: p.fromParty,
-    toParty: p.toParty,
+    direction: p.direction,
     date: isoToDate(p.date),
     mode: p.mode,
     amountCents: p.mode === "VALOR" ? Math.round(p.amount * 100) : null,
@@ -57,24 +57,34 @@ export async function saveContract(contractId: string | null, input: unknown): P
     percentageBase: p.mode === "PERCENTAGEM" ? p.percentageBase : null,
   }));
 
+  const dates = d.dates.map((x, order) => ({
+    order,
+    kind: x.kind,
+    label: x.kind === "OUTRA" ? x.label : null,
+    date: isoToDate(x.date),
+    note: x.note || null,
+  }));
+
   let id: string;
   if (contractId) {
     await prisma.$transaction([
       prisma.payment.deleteMany({ where: { contractId } }),
+      prisma.contractDate.deleteMany({ where: { contractId } }),
       prisma.contract.update({
         where: { id: contractId },
-        data: { ...data, payments: { create: payments } },
+        data: { ...data, payments: { create: payments }, dates: { create: dates } },
       }),
     ]);
     id = contractId;
   } else {
     const created = await prisma.contract.create({
-      data: { ...data, creatorId: user.id, payments: { create: payments } },
+      data: { ...data, creatorId: user.id, payments: { create: payments }, dates: { create: dates } },
     });
     id = created.id;
   }
 
   revalidatePath("/contratos");
+  revalidatePath("/calendario");
   redirect(`/contratos/${id}`);
 }
 
@@ -89,5 +99,6 @@ export async function deleteContract(contractId: string): Promise<ActionResult> 
   }
   await prisma.contract.delete({ where: { id: contractId } });
   revalidatePath("/contratos");
+  revalidatePath("/calendario");
   redirect("/contratos");
 }

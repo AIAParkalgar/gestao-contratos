@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/lib/useHydrated";
 import { useState, useTransition } from "react";
 import { changePassword } from "./actions";
 import ErrorBox from "@/components/ErrorBox";
@@ -9,6 +10,7 @@ export default function PasswordForm() {
   const [errors, setErrors] = useState<string[]>([]);
   const [ok, setOk] = useState(false);
   const [pending, startTransition] = useTransition();
+  const hydrated = useHydrated();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +41,7 @@ export default function PasswordForm() {
       {field("current", "Password atual", "current-password")}
       {field("next", "Nova password (mín. 8 caracteres)", "new-password")}
       {field("confirm", "Confirmar nova password", "new-password")}
-      <button type="submit" className="btn btn-primary" disabled={pending}>
+      <button type="submit" className="btn btn-primary" disabled={pending || !hydrated}>
         {pending ? "A guardar…" : "Alterar password"}
       </button>
     </form>

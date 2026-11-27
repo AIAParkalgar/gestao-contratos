@@ -24,3 +24,12 @@ export function VisibilityBadge({ value }: { value: string }) {
 export function StatusBadge({ status }: { status: ContractStatus }) {
   return <span className={`${base} ${STATUS_STYLES[status.key]}`}>{status.label}</span>;
 }
+
+export function DirectionBadge({ direction }: { direction: string }) {
+  const pays = direction === "PARKALGAR_PARA_ENTIDADE";
+  return (
+    <span className={`${base} ${pays ? "bg-rose-50 text-rose-700 ring-rose-600/20" : "bg-emerald-50 text-emerald-700 ring-emerald-600/20"}`}>
+      {pays ? "A pagar" : "A receber"}
+    </span>
+  );
+}

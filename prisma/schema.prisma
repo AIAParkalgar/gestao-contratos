@@ -50,12 +50,14 @@ model Contract {
   startDate   DateTime
   endDate     DateTime
   obligations String
+  documentUrl String? // link para a cópia do contrato (ex.: SharePoint)
   visibility  String    @default("RESTRITO")
   teamId      String? // obrigatório quando visibility = RESTRITO
   team        Team?     @relation(fields: [teamId], references: [id])
   creatorId   String
   creator     User      @relation("ContractCreator", fields: [creatorId], references: [id])
   payments    Payment[]
+  dates       ContractDate[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -64,13 +66,13 @@ model Contract {
   @@index([creatorId])
 }
 
+// direction: "PARKALGAR_PARA_ENTIDADE" | "ENTIDADE_PARA_PARKALGAR"
 // mode: "VALOR" | "PERCENTAGEM"
 model Payment {
   id             String   @id @default(cuid())
   contractId     String
   contract       Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  fromParty      String // De
-  toParty        String // Para
+  direction      String // De → Para (sempre entre a Parkalgar e a entidade contratante)
   date           DateTime
   mode           String
   amountCents    Int? // quando mode = VALOR (em cêntimos de euro)
@@ -79,6 +81,23 @@ model Payment {
   order          Int      @default(0)
 
   @@index([contractId])
+  @@index([date])
+}
+
+// Outras datas relevantes do contrato.
+// kind: "RENOVACAO" | "RESCISAO_ANTECIPADA" | "AVISO_PREVIO" | "OUTRA"
+model ContractDate {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  kind       String
+  label      String? // nome da data quando kind = OUTRA
+  date       DateTime
+  note       String?
+  order      Int      @default(0)
+
+  @@index([contractId])
+  @@index([date])
 }
 
 // Tentativas de login falhadas, para bloquear ataques de força bruta.

@@ -21,9 +21,11 @@ export default async function NewContractPage() {
           startDate: "",
           endDate: "",
           obligations: "",
+          documentUrl: "",
           visibility: "RESTRITO",
           teamId: teams.length === 1 ? teams[0].id : "",
           payments: [],
+          dates: [],
         }}
       />
     </div>
