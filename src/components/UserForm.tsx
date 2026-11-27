@@ -91,7 +91,10 @@ export default function UserForm({
             );
           })}
         </div>
-        <p className="mt-1 text-xs text-slate-500">Um utilizador vê os contratos restritos das equipas a que pertence.</p>
+        <p className="mt-1 text-xs text-slate-500">
+          Um utilizador vê os contratos restritos das equipas a que pertence.{" "}
+          <Link href="/admin/equipas" className="text-indigo-700 hover:underline">Gerir equipas</Link>
+        </p>
       </fieldset>
 
       {userId && (

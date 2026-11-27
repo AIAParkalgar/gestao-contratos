@@ -93,6 +93,11 @@ export const contractSchema = z
 
 export type ContractInput = z.infer<typeof contractSchema>;
 
+export const teamSchema = z.object({
+  name: required().pipe(z.string().max(60, "máximo 60 caracteres")),
+  memberIds: z.array(z.string()).max(1000),
+});
+
 export const userSchema = z.object({
   name: required(),
   email: z.string().trim().toLowerCase().email("email inválido"),
@@ -116,6 +121,7 @@ const FIELD_LABELS: Record<string, string> = {
   password: "Password",
   role: "Perfil",
   teamIds: "Equipas",
+  memberIds: "Membros",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {

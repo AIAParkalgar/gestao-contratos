@@ -6,7 +6,7 @@ Plataforma web para registar e consultar contratos, com login e controlo de aces
 
 - **Login** com email e password. Não há registo público: as contas são criadas por um administrador.
 - **Perfis**: Utilizador e Administrador.
-- **Equipas**: Comercial, Comunicação e Operações. Um utilizador pode pertencer a várias equipas.
+- **Equipas**: começam com Comercial, Comunicação e Operações e são geridas pelos administradores. Um utilizador pode pertencer a várias equipas.
 - **Contratos**: tipo, entidade contratante, data de início, data de fim, obrigações, link para o documento (ex.: SharePoint), equipa e visibilidade.
 - **Calendário de pagamentos**: De e Para (sempre entre a Parkalgar e a entidade contratante, indicando se é a receber ou a pagar), Data e um montante, que pode ser:
   - um **valor** fixo em euros, ou
@@ -15,6 +15,7 @@ Plataforma web para registar e consultar contratos, com login e controlo de aces
 - **Calendário**: vista mensal e lista dos próximos 12 meses com início e fim de contratos, pagamentos e outras datas, com filtros por tipo. Cada pessoa só vê as datas dos contratos a que tem acesso.
 - **Lista** com pesquisa (entidade, tipo, obrigações) e filtros por visibilidade, equipa, estado (ativo / por iniciar / terminado) e "só os meus". Os contratos que terminam nos próximos 30 dias aparecem destacados.
 - **Administração de utilizadores**: criar, editar, atribuir equipas e perfil, repor a password e desativar contas.
+- **Administração de equipas**: criar, renomear, gerir membros e apagar equipas. Ao apagar, os contratos passam para outra equipa ou, se eram restritos, passam a confidenciais.
 - **A minha conta**: cada utilizador pode alterar a sua password.
 - **Proteção contra força bruta**: 15 minutos de bloqueio após 5 tentativas de login falhadas.
 
@@ -80,6 +81,7 @@ src/app/(app)/contratos/        lista, detalhe, criar, editar + server actions
 src/app/(app)/calendario/       calendário (mês / lista)
 src/lib/calendar.ts             recolha dos eventos do calendário (respeita as regras de acesso)
 src/app/(app)/admin/utilizadores/  gestão de utilizadores (só admin)
+src/app/(app)/admin/equipas/       gestão de equipas (só admin)
 src/components/ContractForm.tsx formulário com o calendário de pagamentos
 ```
 
@@ -98,6 +100,5 @@ e guarde-o numa nova pasta em `prisma/migrations/`.
 - Estado de cada pagamento (pendente / pago)
 - Valor total do contrato e cálculo das percentagens
 - Histórico de alterações (auditoria)
-- Gestão de equipas pela interface
 - Login com Microsoft 365
 - Domínio próprio (ex.: contratos.empresa.pt)

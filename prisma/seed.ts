@@ -25,8 +25,11 @@ async function upsertUser(name: string, email: string, password: string, role: s
 }
 
 async function main() {
-  for (const name of TEAMS) {
-    await prisma.team.upsert({ where: { name }, update: {}, create: { name } });
+  // Equipas iniciais: só na primeira vez. Depois são geridas pelos administradores
+  // na página "Equipas" (e podem ser renomeadas ou apagadas).
+  if ((await prisma.team.count()) === 0) {
+    for (const name of TEAMS) await prisma.team.create({ data: { name } });
+    console.log(`Equipas iniciais criadas: ${TEAMS.join(", ")}.`);
   }
 
   // O administrador inicial só é criado se ainda não existir nenhum administrador.

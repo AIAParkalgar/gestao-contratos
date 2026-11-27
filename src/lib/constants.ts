@@ -67,3 +67,6 @@ export function dateKindName(kind: string, label?: string | null): string {
   if (kind === "OUTRA") return label?.trim() || DATE_KIND_LABELS.OUTRA;
   return DATE_KIND_LABELS[kind as DateKind] ?? kind;
 }
+
+/** Ao apagar uma equipa: os contratos restritos dessa equipa passam a confidenciais. */
+export const TO_CONFIDENTIAL = "__CONFIDENCIAL__";
