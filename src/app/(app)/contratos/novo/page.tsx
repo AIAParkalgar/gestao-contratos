@@ -20,6 +20,7 @@ export default async function NewContractPage() {
           entity: "",
           startDate: "",
           endDate: "",
+          scope: "",
           obligations: "",
           documentUrl: "",
           visibility: "RESTRITO",

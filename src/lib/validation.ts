@@ -72,6 +72,12 @@ export const contractSchema = z
     entity: required(),
     startDate: isoDate,
     endDate: isoDate,
+    scope: z
+      .string()
+      .trim()
+      .max(5000, "demasiado longo")
+      .optional()
+      .transform((v) => (v ? v : null)),
     obligations: required(),
     documentUrl,
     visibility: z.enum(VISIBILITIES, { errorMap: () => ({ message: "opção inválida" }) }),
@@ -112,6 +118,7 @@ const FIELD_LABELS: Record<string, string> = {
   entity: "Entidade contratante",
   startDate: "Data de início",
   endDate: "Data de fim",
+  scope: "Âmbito",
   obligations: "Obrigações",
   documentUrl: "Link do documento",
   visibility: "Visibilidade",

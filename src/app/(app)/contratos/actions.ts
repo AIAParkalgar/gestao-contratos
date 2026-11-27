@@ -42,6 +42,7 @@ export async function saveContract(contractId: string | null, input: unknown): P
     entity: d.entity,
     startDate: isoToDate(d.startDate),
     endDate: isoToDate(d.endDate),
+    scope: d.scope,
     obligations: d.obligations,
     documentUrl: d.documentUrl,
     visibility: d.visibility,

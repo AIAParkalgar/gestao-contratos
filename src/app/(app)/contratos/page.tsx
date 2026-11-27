@@ -32,6 +32,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Se
       OR: [
         { entity: { contains: q, mode: "insensitive" } },
         { type: { contains: q, mode: "insensitive" } },
+        { scope: { contains: q, mode: "insensitive" } },
         { obligations: { contains: q, mode: "insensitive" } },
       ],
     });
@@ -66,7 +67,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Se
       </div>
 
       <form className="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.1fr_1fr_1fr_auto]" method="get">
-        <input name="q" defaultValue={q} className="input" placeholder="Pesquisar entidade, tipo ou obrigações…" aria-label="Pesquisar" />
+        <input name="q" defaultValue={q} className="input" placeholder="Pesquisar entidade, tipo, âmbito ou obrigações…" aria-label="Pesquisar" />
         <select name="visibilidade" defaultValue={visibilidade} className="input" aria-label="Visibilidade">
           <option value="">Todas as visibilidades</option>
           {VISIBILITIES.map((v) => <option key={v} value={v}>{VISIBILITY_LABELS[v]}</option>)}
@@ -113,6 +114,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Se
                   <tr key={c.id} className="hover:bg-slate-50">
                     <td className="px-4 py-2.5">
                       <Link href={`/contratos/${c.id}`} className="font-medium text-indigo-700 hover:underline">{c.entity}</Link>
+                      {c.scope && (
+                        <span className="block max-w-xs truncate text-xs text-slate-500" title={c.scope}>{c.scope}</span>
+                      )}
                       {c._count.payments > 0 && (
                         <span className="block text-xs text-slate-500">
                           {c._count.payments} pagamento{c._count.payments === 1 ? "" : "s"}

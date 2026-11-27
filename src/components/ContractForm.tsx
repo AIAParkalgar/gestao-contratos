@@ -42,6 +42,7 @@ export type ContractFormValues = {
   entity: string;
   startDate: string;
   endDate: string;
+  scope: string;
   obligations: string;
   documentUrl: string;
   visibility: Visibility;
@@ -103,6 +104,7 @@ export default function ContractForm({
       entity: values.entity,
       startDate: values.startDate,
       endDate: values.endDate,
+      scope: values.scope,
       obligations: values.obligations,
       documentUrl: values.documentUrl,
       visibility: values.visibility,
@@ -154,6 +156,14 @@ export default function ContractForm({
             <label className="label" htmlFor="endDate">Data de fim *</label>
             <input id="endDate" type="date" className="input" required value={values.endDate}
               min={values.startDate || undefined} onChange={(e) => set("endDate", e.target.value)} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="scope">
+              Âmbito (scope) <span className="font-normal text-slate-400">(opcional)</span>
+            </label>
+            <textarea id="scope" rows={3} className="input" value={values.scope}
+              onChange={(e) => set("scope", e.target.value)}
+              placeholder="Propósito do contrato: o que está a ser contratado e para quê…" />
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="obligations">Obrigações *</label>

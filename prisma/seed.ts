@@ -63,7 +63,8 @@ async function main() {
 
   await prisma.contract.create({
     data: {
-      type: "Patrocínio", entity: "Marca Exemplo, S.A.", visibility: "PUBLICO", teamId: await team("Comercial"),
+      type: "Patrocínio", entity: "Marca Exemplo, S.A.",
+      scope: "Patrocínio principal do evento, com direitos de naming na bancada central.", visibility: "PUBLICO", teamId: await team("Comercial"),
       startDate: d("2026-01-01"), endDate: d("2027-12-31"), creatorId: ana.id,
       obligations: "Patrocinador: pagamento das tranches acordadas.\nEmpresa: exposição de marca nos suportes do evento e 20 convites VIP.",
       payments: { create: [

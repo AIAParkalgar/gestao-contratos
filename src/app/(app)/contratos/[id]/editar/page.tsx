@@ -38,6 +38,7 @@ export default async function EditContractPage({ params }: { params: Promise<{ i
           entity: contract.entity,
           startDate: dateToISO(contract.startDate),
           endDate: dateToISO(contract.endDate),
+          scope: contract.scope ?? "",
           obligations: contract.obligations,
           documentUrl: contract.documentUrl ?? "",
           visibility: contract.visibility as Visibility,

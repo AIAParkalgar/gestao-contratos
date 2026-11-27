@@ -85,6 +85,15 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
       </section>
 
       <section className="card p-5">
+        <h2 className="mb-2 text-base font-semibold text-slate-900">Âmbito</h2>
+        {contract.scope ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{contract.scope}</p>
+        ) : (
+          <p className="text-sm text-slate-400">Sem âmbito definido.</p>
+        )}
+      </section>
+
+      <section className="card p-5">
         <h2 className="mb-2 text-base font-semibold text-slate-900">Obrigações</h2>
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{contract.obligations}</p>
       </section>

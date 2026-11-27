@@ -49,6 +49,7 @@ model Contract {
   entity      String // entidade contratante
   startDate   DateTime
   endDate     DateTime
+  scope       String? // âmbito: propósito do contrato
   obligations String
   documentUrl String? // link para a cópia do contrato (ex.: SharePoint)
   visibility  String    @default("RESTRITO")

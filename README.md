@@ -7,7 +7,7 @@ Plataforma web para registar e consultar contratos, com login e controlo de aces
 - **Login** com email e password. Não há registo público: as contas são criadas por um administrador.
 - **Perfis**: Utilizador e Administrador.
 - **Equipas**: começam com Comercial, Comunicação e Operações e são geridas pelos administradores. Um utilizador pode pertencer a várias equipas.
-- **Contratos**: tipo, entidade contratante, data de início, data de fim, obrigações, link para o documento (ex.: SharePoint), equipa e visibilidade.
+- **Contratos**: tipo, entidade contratante, data de início, data de fim, âmbito (scope), obrigações, link para o documento (ex.: SharePoint), equipa e visibilidade.
 - **Calendário de pagamentos**: De e Para (sempre entre a Parkalgar e a entidade contratante, indicando se é a receber ou a pagar), Data e um montante, que pode ser:
   - um **valor** fixo em euros, ou
   - uma **percentagem** (com o campo "Percentagem de" em texto livre, ex.: "receita de bilheteira").
